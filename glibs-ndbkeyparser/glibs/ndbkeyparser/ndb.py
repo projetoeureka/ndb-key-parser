@@ -36,6 +36,10 @@ class Key(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __repr__(self):
+        id = self.id() if type(self.id()) == int else "'{}'".format(self.id())
+        return "Key('{kind}', {id}, app='{app}')".format(kind=self.kind(), id=id, app=self.app())
+
 
 # Everything from here on is ndb's code
 
