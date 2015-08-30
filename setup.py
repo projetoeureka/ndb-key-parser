@@ -7,6 +7,7 @@ setuptools.setup(
     url="http://www.geekie.com.br",
     packages=["glibs"],
     namespace_packages=["glibs"],
+    setup_requires=["setuptools_git==1.0b1"],
     include_package_data=True,
     zip_safe=False,
 )
