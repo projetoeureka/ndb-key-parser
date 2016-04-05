@@ -1,5 +1,6 @@
 import base64
 from . import entity_pb
+from . import ProtocolBuffer
 
 
 class Key(object):
@@ -39,6 +40,33 @@ class Key(object):
     def __repr__(self):
         id = self.id() if type(self.id()) == int else "'{}'".format(self.id())
         return "Key('{kind}', {id}, app='{app}')".format(kind=self.kind(), id=id, app=self.app())
+
+
+class ConverterHelper(object):
+
+    def __init__(self, ndb_app):
+        self._ndb_app = ndb_app
+
+    def ensure_key(self, value, kind=None):
+        try:
+            key = Key(urlsafe=value)
+            if kind and key.kind() != kind:
+                raise ValueError
+            return value
+        except (ProtocolBuffer.ProtocolBufferDecodeError, TypeError):
+            if kind:
+                return Key(kind, int(value), app=self._ndb_app).urlsafe()
+            raise ValueError
+
+    def ensure_id(self, value):
+        try:
+            int(value)
+            return str(value)
+        except ValueError:
+            try:
+                return str(Key(urlsafe=value).id())
+            except (ProtocolBuffer.ProtocolBufferDecodeError, TypeError):
+                raise ValueError
 
 
 # Everything from here on is ndb's code
