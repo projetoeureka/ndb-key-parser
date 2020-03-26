@@ -10,8 +10,8 @@ class Key(object):
             serialized = _DecodeUrlSafe(kwargs["urlsafe"])
             ref = _ReferenceFromSerialized(serialized)
             el = ref.path().element_list()[0]
-            self._pair = el.type(), int(el.id())
-            self._app = ref.app()
+            self._pair = el.type().decode("utf-8"), int(el.id())
+            self._app = ref.app().decode("utf-8")
         else:
             assert len(args) == 2, "exactly one pair given"
             assert "app" in kwargs, "app given explicitly"
@@ -29,7 +29,7 @@ class Key(object):
 
     def urlsafe(self):
         ref = _ReferenceFromPairs([self._pair], app=self._app)
-        return base64.b64encode(ref.Encode()).rstrip('=').replace('+', '-').replace('/', '_')
+        return base64.b64encode(ref.Encode()).rstrip(b'=').replace(b'+', b'-').replace(b'/', b'_').decode("utf-8")
 
     def __eq__(self, other):
         return isinstance(other, Key) and (self._pair, self._app) == (other._pair, other._app)
@@ -107,21 +107,21 @@ def _DecodeUrlSafe(urlsafe):
 
     This returns the decoded string.
     """
-    if not isinstance(urlsafe, basestring):
+    if not isinstance(urlsafe, str):
         raise TypeError('urlsafe must be a string; received %r' % urlsafe)
-    if isinstance(urlsafe, unicode):
+    if isinstance(urlsafe, str):
         urlsafe = urlsafe.encode('utf8')
     mod = len(urlsafe) % 4
     if mod:
         urlsafe += '=' * (4 - mod)
     # This is 3-4x faster than urlsafe_b64decode()
-    return base64.b64decode(urlsafe.replace('-', '+').replace('_', '/'))
+    return base64.b64decode(urlsafe.replace(b'-', b'+').replace(b'_', b'/'))
 
 
 def _ReferenceFromSerialized(serialized):
     """Construct a Reference from a serialized Reference."""
-    if not isinstance(serialized, basestring):
-        raise TypeError('serialized must be a string; received %r' % serialized)
-    elif isinstance(serialized, unicode):
+    if not isinstance(serialized, bytes):
+        raise TypeError('serialized must be a bytestring; received %r' % serialized)
+    elif isinstance(serialized, str):
         serialized = serialized.encode('utf8')
     return entity_pb.Reference(serialized)
