@@ -1,5 +1,6 @@
 import base64
 import binascii
+import six
 
 from . import entity_pb
 from . import ProtocolBuffer
@@ -116,9 +117,9 @@ def _DecodeUrlSafe(urlsafe):
 
     This returns the decoded string.
     """
-    if not isinstance(urlsafe, str):
+    if not isinstance(urlsafe, six.string_types):
         raise TypeError("urlsafe must be a string; received %r" % urlsafe)
-    if isinstance(urlsafe, str):
+    if isinstance(urlsafe, six.text_type):
         urlsafe = urlsafe.encode("utf8")
     padding = b"=" * (-len(urlsafe) % 4)
     urlsafe += padding
@@ -131,8 +132,8 @@ def _DecodeUrlSafe(urlsafe):
 
 def _ReferenceFromSerialized(serialized):
     """Construct a Reference from a serialized Reference."""
-    if not isinstance(serialized, bytes):
+    if not isinstance(serialized, six.binary_type):
         raise TypeError("serialized must be a bytestring; received %r" % serialized)
-    elif isinstance(serialized, str):
+    elif isinstance(serialized, six.text_type):
         serialized = serialized.encode("utf8")
     return entity_pb.Reference(serialized)

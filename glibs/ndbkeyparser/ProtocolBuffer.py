@@ -17,9 +17,10 @@
 
 
 import array
-import http.client
 import re
 import struct
+
+from .compat import array_frombytes, array_tobytes
 
 __all__ = [
     "ProtocolMessage",
@@ -48,7 +49,7 @@ class ProtocolMessage:
     def Encode(self):
         e = Encoder()
         self.Output(e)
-        return e.buffer().tobytes()
+        return array_tobytes(e.buffer())
 
     def SerializeToString(self):
         return self.Encode()
@@ -56,7 +57,7 @@ class ProtocolMessage:
     def SerializePartialToString(self):
         e = Encoder()
         self.OutputPartial(e)
-        return e.buffer().tobytes()
+        return array_tobytes(e.buffer())
 
     def ParseFromString(self, s):
         self.Clear()
@@ -74,7 +75,7 @@ class ProtocolMessage:
 
     def MergePartialFromString(self, s):
         a = array.array("B")
-        a.frombytes(s)
+        array_frombytes(a, s)
         d = Decoder(a, 0, len(a))
         self.TryMerge(d)
 
@@ -83,63 +84,6 @@ class ProtocolMessage:
 
     def __setstate__(self, contents_):
         self.__init__(contents=contents_)
-
-    def sendCommand(
-        self,
-        server,
-        url,
-        response,
-        follow_redirects=1,
-        secure=0,
-        keyfile=None,
-        certfile=None,
-    ):
-        data = self.Encode()
-        if secure:
-            if keyfile and certfile:
-                conn = http.client.HTTPSConnection(
-                    server, key_file=keyfile, cert_file=certfile
-                )
-            else:
-                conn = http.client.HTTPSConnection(server)
-        else:
-            conn = http.client.HTTPConnection(server)
-        conn.putrequest("POST", url)
-        conn.putheader("Content-Length", "%d" % len(data))
-        conn.endheaders()
-        conn.send(data)
-        resp = conn.getresponse()
-        if follow_redirects > 0 and resp.status == 302:
-            m = URL_RE.match(resp.getheader("Location"))
-            if m:
-                protocol, server, url = m.groups()
-                return self.sendCommand(
-                    server,
-                    url,
-                    response,
-                    follow_redirects=follow_redirects - 1,
-                    secure=(protocol == "https"),
-                    keyfile=keyfile,
-                    certfile=certfile,
-                )
-        if resp.status != 200:
-            raise ProtocolBufferReturnError(resp.status)
-        if response is not None:
-            response.ParseFromString(resp.read())
-        return response
-
-    def sendSecureCommand(
-        self, server, keyfile, certfile, url, response, follow_redirects=1
-    ):
-        return self.sendCommand(
-            server,
-            url,
-            response,
-            follow_redirects=follow_redirects,
-            secure=1,
-            keyfile=keyfile,
-            certfile=certfile,
-        )
 
     def __str__(self, prefix="", printElemNumber=0):
         raise NotImplementedError
@@ -416,13 +360,13 @@ class Encoder:
 
     def putFloat(self, v):
         a = array.array("B")
-        a.frombytes(struct.pack("<f", v))
+        array_frombytes(a, struct.pack("<f", v))
         self.buf.extend(a)
         return
 
     def putDouble(self, v):
         a = array.array("B")
-        a.frombytes(struct.pack("<d", v))
+        array_frombytes(a, struct.pack("<d", v))
         self.buf.extend(a)
         return
 
@@ -435,11 +379,11 @@ class Encoder:
 
     def putPrefixedString(self, v):
         self.putVarInt32(len(v))
-        self.buf.frombytes(v.encode("utf-8"))
+        array_frombytes(self.buf, v.encode("utf-8"))
         return
 
     def putRawString(self, v):
-        self.buf.frombytes(v)
+        array_frombytes(self.buf, v)
 
     _TYPE_TO_METHOD = {
         TYPE_DOUBLE: putDouble,
@@ -630,12 +574,12 @@ class Decoder:
             raise ProtocolBufferDecodeError("truncated")
         r = self.buf[self.idx : self.idx + length]
         self.idx += length
-        return r.tobytes()
+        return array_tobytes(r)
 
     def getRawString(self):
         r = self.buf[self.idx : self.limit]
         self.idx = self.limit
-        return r.tobytes()
+        return array_tobytes(r)
 
     _TYPE_TO_METHOD = {
         TYPE_DOUBLE: getDouble,
