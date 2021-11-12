@@ -52,7 +52,7 @@ class ConverterHelperTest(unittest.TestCase):
             self.converter.ensure_key(value, kind="Not-Model")
 
     def test_ensure_key_raises_if_value_is_not_urlsafe_and_kind_not_provided(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.converter.ensure_key(value="1", kind=None)
 
     def test_ensure_key_raises_if_value_is_not_urlsafe_and_is_not_an_int(self):
