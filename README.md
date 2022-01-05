@@ -1,3 +1,5 @@
+**DEPRECATED**: Use [glibs-ndb](https://github.com/projetoeureka/glibs-ndb) instead.
+
 # glibs-ndbkeyparser
 
 Very small library for parsing AppEngine keys as urlsafes when outside the
